@@ -5,7 +5,7 @@
 #show: ieee.with(
   title: [A Natural-Language Geospatial Query\ and Site-Evaluation System on PostGIS],
   abstract: [
-    Geospatial analysis supports urban planning, retail strategy and infrastructure decisions, yet traditional GIS platforms demand expertise in spatial query languages and specialised software. Large language models (LLMs) can lower this barrier, but systems that let the model answer directly tend to hallucinate place names and coordinates, which makes their output unverifiable. This paper presents GeoQuery, a Felt-style layered web map driven by a natural-language to PostGIS query engine grounded in open data. A user asks a spatial question in English, for example "hospitals within 1 km of a metro station". An LLM writes a PostGIS query against a documented schema, the query is executed on real data, and the system returns a GeoJSON answer layer, a grounded explanation and the SQL itself, so every answer carries provenance. On top of the engine we build intelligent decision tools: a click-to-evaluate site report, a competition and catchment analysis, a cost-to-open and break-even estimator, and a side-by-side comparison of up to three candidate locations. The system runs on PostgreSQL 16 with PostGIS 3.4, serves vector tiles with Martin, and renders them with MapLibre GL. It is loaded with Mumbai data from OpenStreetMap, a 76,000-row house-price dataset and area-level crime data, and its ETL is designed to generalise to other cities. We describe the architecture, the decision models and their current limitations, and report a first benchmark of query accuracy on 39 spatial questions.
+    Geospatial analysis supports urban planning, retail strategy and infrastructure decisions, yet traditional GIS platforms demand expertise in spatial query languages and specialised software. Large language models (LLMs) can lower this barrier, but systems that let the model answer directly tend to hallucinate place names and coordinates, which makes their output unverifiable. This paper presents GeoQuery, a Felt-style layered web map driven by a natural-language to PostGIS query engine grounded in open data. An LLM writes a PostGIS query against a documented schema, the query is executed on real data, and the system returns a GeoJSON answer layer, a grounded explanation and the SQL itself, so every answer carries provenance. On top of the engine we build intelligent decision tools: a site report, a competition and catchment analysis, a cost-to-open and break-even estimator, and a side-by-side comparison of up to three candidate locations. The system runs on PostgreSQL 16 with PostGIS 3.4, Martin vector tiles and MapLibre GL, and is loaded with Mumbai data from OpenStreetMap, a 76,000-row house-price dataset and area-level crime data; its ETL is designed to generalise to other cities. We describe the architecture, the decision models and their limitations, and report a first benchmark of query accuracy on 39 spatial questions.
   ],
   authors: (
     
@@ -42,33 +42,31 @@
 )
 
 = Introduction
-Geospatial data is central to urban planning, transportation, environmental monitoring and retail analytics. Geographic Information Systems (GIS) have traditionally been the main tools for such analysis, but they require users to understand spatial data handling, query languages such as SQL, and specialised software. This creates a barrier for the many people who have location questions but no GIS training.
+Geospatial data is central to urban planning, transportation and retail analytics. Geographic Information Systems (GIS) have traditionally been the main tools for such analysis, but they require users to understand spatial data handling, query languages such as SQL, and specialised software, which is a barrier for the many people who have location questions but no GIS training.
 
-Web platforms such as Felt have made map creation, collaboration and visualization much easier @felt. Even so, users must still translate a real-world question into manual operations on layers and filters. At the same time, LLMs have made natural-language interfaces to structured data practical, and recent work applies them to spatial data @chatgeoai @spatialt2s.
+Web platforms such as Felt have made map creation and collaboration much easier @felt, but users must still translate a real-world question into manual operations on layers and filters. LLMs have made natural-language interfaces to structured data practical, and recent work applies them to spatial data @chatgeoai @spatialt2s.
 
-A naive way to build such an interface is to let the LLM answer the question itself. Our first proof of concept (POC) did this and exposed three weaknesses. The model invented area names and coordinates. Ranking used a fixed hand-weighted formula over about 40 areas with synthetic 1 to 10 metrics. Map markers were placed with random coordinate jitter, and the maps were Leaflet raster maps with no real spatial computation. None of the outputs could be checked: the assistant answered with familiar area names, but nothing in the answer was computed from data.
+A naive interface lets the LLM answer the question itself. Our first proof of concept (POC) did this and exposed three weaknesses: the model invented area names and coordinates, ranking used a fixed hand-weighted formula over about 40 areas with synthetic 1 to 10 metrics, and map markers were placed with random coordinate jitter on Leaflet raster maps with no real spatial computation. None of the outputs could be checked: the assistant answered with familiar area names, but nothing in the answer was computed from data.
 
-The central idea of this work is to replace "the LLM hallucinates the answer" with "the LLM writes a structured spatial query that is executed on real data". Every output is then verifiable and reproducible, and the generated SQL is shown to the user as provenance.
+The central idea of this work is to replace "the LLM hallucinates the answer" with "the LLM writes a structured spatial query that is executed on real data", so that every output is verifiable and reproducible and the generated SQL is shown as provenance.
 
-GeoQuery implements this idea as a full-screen layered map with a natural-language query bar. Beyond exploratory queries, it supports decision-oriented work for prospective business owners: evaluating a clicked location, analysing local competition and catchment demand, estimating the cost to open a store, and comparing candidate sites. The main contributions are:
+GeoQuery implements this idea as a full-screen layered map with a natural-language query bar, and supports decision-oriented work for prospective business owners: evaluating a clicked location, analysing local competition and catchment demand, estimating the cost to open a store, and comparing candidate sites. The main contributions are:
 
 + A natural-language to PostGIS query engine that grounds the LLM in a documented schema and returns a GeoJSON layer, an explanation and the executed SQL.
-+ A real-data foundation: an ETL pipeline that loads OpenStreetMap, real-estate listings and crime data into a single spatial database, designed to work for any city.
-+ A set of decision tools (site evaluation, competition analysis, cost-to-open, location comparison) built on the same data.
-+ An honest account of what is and is not yet validated, together with the evaluation plan for the missing pieces.
++ A real-data foundation: an ETL pipeline that loads OpenStreetMap, real-estate listings and crime data into one spatial database, designed to work for any city.
++ Decision tools (site evaluation, competition analysis, cost-to-open, location comparison) built on the same data.
++ An honest account of what is and is not yet validated, with the evaluation plan for the missing pieces.
 
 = Literature Survey
 Traditional GIS platforms such as ArcGIS and QGIS provide buffering, proximity analysis and spatial querying, but assume knowledge of spatial concepts, data formats and query languages. Cloud platforms such as Felt and Mapbox improve collaboration and visualization @felt, yet users still drive them through layers, filters and map controls.
 
-Natural-language interfaces to databases map a question to an executable query. Benchmarks such as Spider @spider and BIRD @bird have driven progress on general text-to-SQL, with LLM-based systems now dominating. Spatial questions add difficulty: the model must pick the right geometry types, apply spatial predicates and distance functions correctly, and respect coordinate reference systems. Early geospatial interfaces used rule-based mapping from keywords such as "near" and "within" to spatial operations. These are effective for simple queries but brittle for ambiguous or compositional ones.
+Natural-language interfaces to databases map a question to an executable query. Benchmarks such as Spider @spider and BIRD @bird have driven progress on general text-to-SQL, with LLM-based systems now dominating. Spatial questions add difficulty: the model must pick the right geometry types, apply spatial predicates and distance functions correctly, and respect coordinate reference systems. Early rule-based interfaces mapped keywords such as "near" and "within" to spatial operations, which works for simple queries but is brittle for ambiguous or compositional ones.
 
-More recent work uses LLMs for geospatial tasks. A multi-agent spatial text-to-SQL pipeline reports that adding an execution-based review stage improves accuracy by roughly 11 points @spatialt2s. ChatGeoAI converts natural language into executable geospatial operations for non-expert users @chatgeoai. GeoLLM shows that LLMs combined with OpenStreetMap features can model quantities for which ground truth is scarce @geollm. We take the first two as the design reference for our query engine. The 11-point figure is a result from that work, not from ours. We treat GeoLLM as relevant to estimating metrics, such as rent, where no direct data exists.
+More recent work uses LLMs for geospatial tasks. A multi-agent spatial text-to-SQL pipeline reports that an execution-based review stage improves accuracy by roughly 11 points @spatialt2s, a result from that work and not from ours. ChatGeoAI converts natural language into executable geospatial operations for non-expert users @chatgeoai, and we take these two as the design reference for our query engine. GeoLLM shows that LLMs combined with OpenStreetMap features can model quantities for which ground truth is scarce @geollm, which we treat as relevant to estimating metrics such as rent where no direct data exists.
 
-Spatial decision support systems extend GIS with multi-criteria decision analysis (MCDA) for tasks such as site selection @malczewski. They rank candidates by combining normalised criteria with weights, but typically require expert configuration and expert interpretation of the result.
+Spatial decision support systems extend GIS with multi-criteria decision analysis (MCDA) for tasks such as site selection @malczewski. They rank candidates by combining normalised criteria with weights, but typically need expert configuration and interpretation.
 
-OpenStreetMap (OSM) provides free, globally available data on roads, amenities and land use @osm, and tools such as OSMnx make it easy to acquire polygon-bounded extracts for any city @osmnx. PostGIS adds spatial types, GiST indexing and spatial functions to PostgreSQL, which makes it a suitable execution target for generated queries.
-
-Existing systems tend to cover either visualization, query processing or decision support. We combine all three on one open-data stack, with the emphasis on verifiable query results.
+OpenStreetMap (OSM) provides free, globally available data on roads, amenities and land use @osm, and OSMnx makes it easy to acquire polygon-bounded extracts for any city @osmnx. PostGIS adds spatial types, GiST indexing and spatial functions to PostgreSQL, a suitable execution target for generated queries. Existing systems tend to cover either visualization, query processing or decision support; we combine all three on one open-data stack, with the emphasis on verifiable query results.
 
 = Proposed System
 GeoQuery lets users ask questions about geospatial data in plain English and then act on the results with decision tools. Its workspace is a full-screen map with a layer panel, a natural-language query bar, and panels for evaluating, comparing and costing locations.
@@ -239,45 +237,33 @@ The benchmark in `eval/nl2sql/` has 39 spatial questions in six categories (filt
   caption: [Benchmark results on 39 questions, single run.],
 ) <tab-bench>
 
-The full engine returns exactly the gold layer for 29 of the 39 questions (74.4%, geometry F1 88.4%), and every generated query executed and returned rows (@tab-bench, @fig-bench(a)). The repair stage was never triggered, so the first-attempt-only configuration scores identically and this benchmark shows no benefit from repair. Accuracy is highest for named-area and ranking questions (both 100%) and lowest for listings (25%). Eight of the ten failures come from a row cap and not from a wrong query: the schema notes tell the model to use `LIMIT 500`, so questions whose gold answer is larger than 500 rows are truncated, and joined queries without `DISTINCT` let duplicate rows use up the limit. The other two are over-inclusive category choices (universities matched together with colleges, and motorways with a pattern broader than the gold road class). We count all ten as failures, but they point to the prompt rules and to the exact-match scoring more than to a lack of spatial reasoning.
+The full engine returns exactly the gold layer for 29 of the 39 questions (74.4%, geometry F1 88.4%), and every generated query executed and returned rows (@tab-bench, @fig-bench-category). The repair stage was never triggered, so the first-attempt-only configuration scores identically and this benchmark shows no benefit from repair. Accuracy is highest for named-area and ranking questions (both 100%) and lowest for listings (25%). Eight of the ten failures come from a row cap and not from a wrong query: the schema notes tell the model to use `LIMIT 500`, so questions whose gold answer is larger than 500 rows are truncated, and joined queries without `DISTINCT` let duplicate rows use up the limit. The other two are over-inclusive category choices (universities matched together with colleges, and motorways with a pattern broader than the gold road class). We count all ten as failures, but they point to the prompt rules and to the exact-match scoring more than to a lack of spatial reasoning.
 
 #figure(
-  placement: top,
-  scope: "parent",
-  grid(
-    columns: (1fr, 1fr),
-    column-gutter: 8pt,
-    row-gutter: 3pt,
-    align: (center + bottom),
-    fig-category(w: 6.6cm, h: 3.3cm),
-    fig-baseline(w: 6.6cm, h: 3.3cm),
-    text(size: 8pt)[(a) Exact-match accuracy by question category.],
-    text(size: 8pt)[(b) Grounding of the direct-LLM baseline (three left bars) next to the engine's geometry F1 against the gold answer (right bar).],
-  ),
-  caption: [Benchmark results. The first-attempt-only configuration in (a) is identical to the full engine because no repair was needed. The metrics in (b) differ: the baseline bars show how much of its output is real, the engine bar its agreement with the gold layer.],
-) <fig-bench>
+  fig-category(),
+  caption: [Exact-match accuracy by question category. The first-attempt-only configuration is identical to the full engine because no repair was needed.],
+) <fig-bench-category>
 
-The direct-LLM baseline gives a very different picture (@fig-bench(b)). Only 19.5% of the place names it returned exist in the database, 57.0% of its coordinates lie within 150 m of some real feature, and only 10.6% lie within 200 m of a feature in the gold answer. The coordinate figure is generous, because Mumbai is dense and a random point is often near some point of interest, so the other two figures are more informative. The baseline returns no SQL, so none of its answers can be checked. The median latency of the engine was 4.5 s, with a 95th percentile of 13.8 s (one LLM call plus the database, without the intent-check and explanation stages), against 13.2 s for the baseline. With 39 questions and one run, differences of a few questions should not be over-interpreted. A further ablation, in which the schema description lists only table names, is implemented but was not run.
+The direct-LLM baseline gives a very different picture (@fig-bench-baseline). Only 19.5% of the place names it returned exist in the database, 57.0% of its coordinates lie within 150 m of some real feature, and only 10.6% lie within 200 m of a feature in the gold answer. The coordinate figure is generous, because Mumbai is dense and a random point is often near some point of interest, so the other two figures are more informative. The baseline returns no SQL, so none of its answers can be checked. The median latency of the engine was 4.5 s, with a 95th percentile of 13.8 s (one LLM call plus the database, without the intent-check and explanation stages), against 13.2 s for the baseline. With 39 questions and one run, differences of a few questions should not be over-interpreted. A further ablation, in which the schema description lists only table names, is implemented but was not run.
+
+#figure(
+  fig-baseline(),
+  caption: [Grounding of the direct-LLM baseline (three left bars) next to the engine's geometry F1 against the gold answer (right bar). The metrics differ: the baseline bars show how much of its output is real, the engine bar its agreement with the gold layer.],
+) <fig-bench-baseline>
 
 === Weighting schemes of the legacy ranking
 
-The comparison of weighting schemes is described with the decision support models above. @fig-weight(a) shows how far each scheme's ranking is from the hand-picked one, and @fig-weight(b) shows how little the ranking changes when a single weight is changed by up to 30%.
+The comparison of weighting schemes is described with the decision support models above. @fig-weight-tau shows how far each scheme's ranking is from the hand-picked one, and @fig-weight-oat shows how little the ranking changes when a single weight is changed by up to 30%.
 
 #figure(
-  placement: top,
-  scope: "parent",
-  grid(
-    columns: (1fr, 1fr),
-    column-gutter: 8pt,
-    row-gutter: 3pt,
-    align: (center + bottom),
-    fig-tau(w: 6.0cm, h: 3.9cm),
-    fig-oat(w: 6.6cm, h: 3.9cm),
-    text(size: 8pt)[(a) Rank agreement (Kendall's $tau$) of each weighting scheme with the hand-picked weights, and the overlap of the top-five areas.],
-    text(size: 8pt)[(b) One-at-a-time sensitivity: Kendall's $tau$ against the hand-picked ranking when one criterion's weight is changed by up to 30%, the others being renormalised.],
-  ),
-  caption: [Sensitivity of the legacy area ranking to its weights.],
-) <fig-weight>
+  fig-tau(),
+  caption: [Rank agreement (Kendall's $tau$) of each weighting scheme with the hand-picked weights, and the overlap of the top-five areas.],
+) <fig-weight-tau>
+
+#figure(
+  fig-oat(),
+  caption: [One-at-a-time sensitivity: Kendall's $tau$ against the hand-picked ranking when one criterion's weight is changed by up to 30%, the others being renormalised.],
+) <fig-weight-oat>
 
 == Discussion
 
@@ -289,7 +275,7 @@ The main weakness is evaluation. The benchmark is small, was run once and did no
 
 == Conclusion
 
-GeoQuery shows that a natural-language interface to geospatial data can be built so that answers are computed on real data and are inspectable. By pairing a schema-grounded LLM with PostGIS, vector tiles and open data, it avoids the invented places and coordinates of direct LLM answers, and it extends the query engine with site evaluation, competition analysis, cost-to-open modelling and location comparison for practical decisions. The system is functional for Mumbai, and its ETL is designed to generalise. A first benchmark of 39 questions shows 74.4% exact-match accuracy against hand-written gold queries, with most failures caused by a row cap, whereas a direct-LLM baseline returns real place names only 19.5% of the time. A larger benchmark remains to be built.
+GeoQuery shows that a natural-language interface to geospatial data can be built so that answers are computed on real data and are inspectable. By pairing a schema-grounded LLM with PostGIS, vector tiles and open data, it avoids the invented places and coordinates of direct LLM answers, and it extends the query engine with site evaluation, competition analysis, cost-to-open modelling and location comparison. The system is functional for Mumbai, and its ETL is designed to generalise. A first benchmark of 39 questions shows 74.4% exact-match accuracy against hand-written gold queries, with most failures caused by a row cap, whereas a direct-LLM baseline returns real place names only 19.5% of the time. A larger benchmark remains to be built.
 
 == Future Scope
 + *Query reliability:* extend the benchmark (more questions, repeated runs, other models and harder queries that exercise the repair stage) in the style of Spider and BIRD @spider @bird @spatialt2s, remove the row-cap and over-inclusion failures found here, and replace the keyword check with parser-based validation and a table allow-list.
