@@ -46,12 +46,7 @@ Geospatial data is central to urban planning, transportation, environmental moni
 
 Web platforms such as Felt have made map creation, collaboration and visualization much easier @felt. Even so, users must still translate a real-world question into manual operations on layers and filters. At the same time, LLMs have made natural-language interfaces to structured data practical, and recent work applies them to spatial data @chatgeoai @spatialt2s.
 
-A naive way to build such an interface is to let the LLM answer the question itself. Our first proof of concept (POC) did this and exposed three weaknesses. The model invented area names and coordinates. Ranking used a fixed hand-weighted formula over about 40 areas with synthetic 1 to 10 metrics. Map markers were placed with random coordinate jitter, and the maps were Leaflet raster maps with no real spatial computation. None of the outputs could be checked. @fig-poc shows a typical exchange: the assistant answers with familiar area names, but nothing in the answer is computed from data.
-
-#figure(
-  image("fig_poc_chat.jpg", width: 100%),
-  caption: [The earlier chat interface. Area suggestions are produced by the LLM directly, with no spatial query behind them.],
-) <fig-poc>
+A naive way to build such an interface is to let the LLM answer the question itself. Our first proof of concept (POC) did this and exposed three weaknesses. The model invented area names and coordinates. Ranking used a fixed hand-weighted formula over about 40 areas with synthetic 1 to 10 metrics. Map markers were placed with random coordinate jitter, and the maps were Leaflet raster maps with no real spatial computation. None of the outputs could be checked: the assistant answered with familiar area names, but nothing in the answer was computed from data.
 
 The central idea of this work is to replace "the LLM hallucinates the answer" with "the LLM writes a structured spatial query that is executed on real data". Every output is then verifiable and reproducible, and the generated SQL is shown to the user as provenance.
 
@@ -117,50 +112,14 @@ GeoQuery lets users ask questions about geospatial data in plain English and the
 ) <fig-system>
 
 == Problem Statement and Objectives
-=== Problem Statement
 
 Geospatial analysis is essential for business planning, but existing GIS tools demand knowledge of spatial data and query languages and mostly leave users to interpret patterns by hand. A person deciding where to open a cafe must weigh prices, transit, safety, competition and start-up cost, and no single easy tool combines these. LLM interfaces lower the barrier, but when the model supplies the answer directly, place names and coordinates can be invented and nothing can be verified. A system is needed that accepts natural language, computes answers on real spatial data, shows how each answer was obtained, and supports practical location decisions.
 
-=== Objectives
-
-The primary objective is to build a natural-language geospatial query and decision-support system whose answers are computed from real data. The specific objectives are:
-
-+ *To provide a natural-language interface* that lets users ask spatial questions in plain English without SQL or GIS knowledge.
-+ *To translate questions into PostGIS queries* using an LLM grounded in a documented schema, and to return the result as a map layer, an explanation and the SQL.
-+ *To build a spatial data foundation* on PostgreSQL and PostGIS from OpenStreetMap, real-estate listings and crime data, with an ETL pipeline that generalises to other cities.
-+ *To serve and render layers efficiently* using vector tiles, with a toggleable layer panel and click-to-inspect interaction.
-+ *To support location decisions* through a site evaluation report, competition and catchment analysis, a cost-to-open and break-even estimator, and a side-by-side comparison of candidate locations.
-+ *To keep results explainable* by generating plain-English explanations and exposing the executed SQL.
-+ *To remain cost-effective* by using open-source tools and open data.
+The objective is therefore a natural-language geospatial query and decision-support system that accepts plain English, translates it into PostGIS queries through an LLM grounded in a documented schema, returns a map layer with an explanation and the executed SQL, and supports location decisions (site evaluation, competition and catchment analysis, cost-to-open and break-even estimation, and side-by-side comparison), using only open-source tools and open data.
 
 == Methodology
 
 The system is a modular pipeline. A question enters through the query bar, the backend turns it into a spatial query, the database executes it, and the frontend draws the answer. Decision tools reuse the same database through dedicated endpoints.
-
-#figure(
-  {
-    let stage(t) = block(width: 100%, stroke: 0.6pt, inset: 4pt, radius: 2pt, align(center, text(size: 7.5pt, t)))
-    let arrow = align(center, text(size: 8pt, sym.arrow.b))
-    stack(
-      dir: ttb,
-      spacing: 2pt,
-      stage[User question (natural language)],
-      arrow,
-      stage[Intent check (clear spatial query?)],
-      arrow,
-      stage[LLM generates PostGIS SQL from the schema description],
-      arrow,
-      stage[Validate, then execute as read-only role],
-      arrow,
-      stage[Repair on DB error or empty result (bounded)],
-      arrow,
-      stage[GeoJSON layer + grounded explanation + SQL],
-      arrow,
-      stage[MapLibre map, answer panel],
-    )
-  },
-  caption: [Natural-language query pipeline of GeoQuery.],
-) <fig-pipeline>
 
 === Explanation of Methodology
 
@@ -169,43 +128,11 @@ The system is a modular pipeline. A question enters through the query bar, the b
 + *Schema grounding.* The SQL-generating call receives a compact description of the queryable schema in its prompt: the tables and columns of the `admin`, `roads`, `transport`, `poi`, `realestate`, `demo`, `crime` and `env` schemas with geometry types and the allowed values of key categorical columns, plus rules to filter every table by `city_id`, never reference an unlisted table or column, and emit one read-only `SELECT` with a geometry column named `geom`. Because the model can only reference data that exists, it cannot invent places. The same description is stored as a 34-row `meta.schema_catalog` table, which the engine does not read at query time.
 + *Query generation.* The LLM (Groq `openai/gpt-oss-120b`, behind a single client module) writes a PostGIS query using functions such as `ST_DWithin` and `ST_Contains` over EPSG:4326 geometry indexed with GiST. The text is validated before execution: it must be a single `SELECT` or `WITH` statement with no chained statements and no data-modifying or DDL keywords.
 + *Execution.* The query runs on PostgreSQL 16 with PostGIS 3.4 as a dedicated `geo_readonly` role, with a 15 second statement timeout and a cap of 5,000 returned features.
-+ *Repair.* If the query fails validation or raises a database error, the error text is fed back to the model for a corrected query, with at most two such repairs. If a valid query returns zero rows, the model is asked once to loosen it. The best successful attempt is kept, preferring a non-empty one, and every attempt is returned to the client.
++ *Repair.* If the query fails validation or raises a database error, the error text is fed back to the model for a corrected query, with at most two such repairs. If a valid query returns zero rows, the model is asked once to loosen it. The best successful attempt is kept, preferring a non-empty one, and every attempt is returned to the client. In total there are at most four generation attempts, a simplified form of the execution-based review in @spatialt2s; the effect of the repair stage on accuracy has not yet been measured.
 + *Result generation.* Rows are converted to a GeoJSON answer layer, and the LLM writes a short explanation grounded in a sample of the returned rows. The generated SQL is returned alongside, so users can inspect how the answer was obtained.
 + *Visualization.* The answer layer is drawn on the map next to the base layers. Base layers are served as Mapbox Vector Tiles by Martin directly from PostGIS.
 
-Chat history is stored in MongoDB. It is not used for spatial data.
-
-== Analysis, Framework and Algorithm
-=== System Framework Overview
-The system has three layers: a presentation layer (React and MapLibre GL), an application layer (FastAPI endpoints and the LLM client), and a data layer (PostGIS, Martin and MongoDB). This separation keeps the model, the query execution and the rendering independently replaceable.
-
-=== Algorithm for Query Processing
-```py
-def answer(question, city_id):
-    intent = llm.interpret(question)           # clear spatial query?
-    if not intent.is_clear:
-        return intent.follow_up                # ask the user, no query run
-    best, error, empty = None, None, False
-    for _ in range(MAX_REPAIRS + 2):
-        sql = llm.generate_sql(question, SCHEMA_DOC, error, empty)
-        try:
-            sql = validate_select(sql)         # single read-only SELECT
-            layer = execute_readonly(sql)      # geo_readonly, 15 s timeout
-        except Exception as e:
-            error, empty = str(e), False       # feed the error back
-            continue
-        if best is None or layer.count > best.count:
-            best = (sql, layer)
-        if layer.count > 0: break
-        if empty: break                        # one loosening attempt only
-        error, empty = None, True
-    text = llm.explain(question, best.rows)    # grounded in returned rows
-    return best.layer, text, best.sql          # SQL returned as provenance
-```
-
-The loop makes at most four generation attempts: the first, up to two repairs after errors, and one loosening after an empty result. This follows the execution-based review idea of @spatialt2s in a simplified form. The effect of the repair stage on accuracy has not yet been measured.
-
-=== Decision Support Models
+== Decision Support Models
 The decision tools are built on the same database and exposed as separate endpoints (`/site-eval`, `/competitor-analysis`, `/business-estimate`).
 
 *Site evaluation.* For a clicked point and a radius between 0.5 and 3 km, the report gives the median price per sqft of nearby listings, a typical price band, a comparison with the city median, a breakdown by size band, the nearest metro, rail and bus stops, amenity counts (healthcare, education, food, banking, shopping), and a safety score with a risk level.
@@ -226,43 +153,8 @@ To test how much the ranking depends on these weights we ran a sensitivity study
 
 The ranking is stable under small changes to a single weight: the worst-case $tau$ for a 30% change in any one weight is 0.90 or higher (lowest for the access weight). It is not stable under a change of weighting scheme. AHP, ROC and the premium scenario keep the same top five as the baseline (Kendall $tau$ of 0.92, 0.81 and 0.83), while equal weights, entropy weights, the student scenario, the budget scenario, TOPSIS and CRITIC share only 2, 2, 2, 1, 1 and 0 of the baseline's top five areas ($tau$ of 0.41, 0.58, 0.87, -0.11, 0.36 and -0.01). Across random weight vectors the median $tau$ against the baseline is 0.33 (5th to 95th percentile: -0.49 to 0.84), and no area stays in the top five in more than 45% of draws (Andheri West is highest at 44.5%). The weights therefore encode a preference, not a neutral measurement, which is one reason the GeoQuery workspace uses measured spatial queries in place of this fixed ranking. These results describe the 40-area scored dataset and should not be read as evidence about real-world site quality.
 
-== Details of Hardware and Software
-
-=== Hardware Requirements
-The system runs on a standard personal computer or laptop.
-
-- Processor: Intel i5 or equivalent (or higher recommended)
-- RAM: minimum 8 GB (16 GB recommended for large datasets)
-- Storage: at least 20 to 50 GB free (OpenStreetMap data and database)
-- Network: internet connection for the LLM API and geocoding
-
-=== Software Requirements
-
-The stack is primarily open source.
-
-#table(
-  columns: (auto, 3cm, 1fr),
-  inset: 3pt,
-  align: horizon,
-  fill: (x, y) => if y == 0 { silver } else { none },
-  stroke: 0.5pt + gray,
-  [*Sr. No.*], [*Software/Tool*], [*Description*],
-  [1], [PostgreSQL 16 + PostGIS 3.4], [Spatial database with GiST indexing; pgvector extension also installed],
-  [2], [Martin], [Serves Mapbox Vector Tiles directly from PostGIS],
-  [3], [FastAPI + Uvicorn], [REST backend for the query engine and decision tools],
-  [4], [Groq API (`openai/gpt-oss-120b`)], [LLM for SQL generation, explanations and cost line items],
-  [5], [React 19 + Zustand], [Frontend and client state],
-  [6], [MapLibre GL], [Vector-tile map rendering in the main workspace],
-  [7], [Leaflet], [Map in the legacy dashboard only],
-  [8], [OSMnx], [Polygon-based OpenStreetMap ingest for any city],
-  [9], [Nominatim], [Geocoding of 228 real-estate localities],
-  [10], [MongoDB], [Chat history only],
-  [11], [Docker], [Runs the database and supporting services],
-)
-
-== Design Details
-
-=== System Architecture Overview
+== Implementation
+GeoQuery has three layers: a presentation layer (React 19, Zustand and MapLibre GL), an application layer (FastAPI with the LLM client, and MongoDB for chat history only) and a data layer (PostgreSQL 16 with PostGIS 3.4, and Martin for vector tiles); @fig-stack lists the components. This separation keeps the model, the query execution and the rendering independently replaceable. The database holds all layers in EPSG:4326 with GiST indexes and a `city_id` on every row, so several cities can coexist. The ETL (`etl/`) ingests roads, transit, POIs and boundaries from OpenStreetMap by city polygon (OSMnx), geocodes 228 real-estate localities with Nominatim and loads the crime data, so the same pipeline can load other cities; the deployed instance is pre-loaded for Mumbai. In the workspace the left panel toggles vector layers (administrative boundaries, roads, transit stops, businesses and POIs, real-estate listings, and a crime and safety score), each with an opacity slider. Users can click a feature to inspect it, type a question into the query bar, or click a point to open the evaluation panel with its Competition and Cost-to-open tabs. The backend exposes `/nlquery`, `/site-eval`, `/competitor-analysis`, `/business-estimate` and `/health`. The original assistant dashboard (`/dashboard`, a chat assistant with a Leaflet heatmap that ranks areas) is kept as the baseline. The system runs on a standard laptop (Intel i5, 8 GB RAM, 20 to 50 GB of storage) using open-source software and open data throughout.
 
 #figure(
   table(
@@ -280,39 +172,8 @@ The stack is primarily open source.
   caption: [System component stack.],
 ) <fig-stack>
 
-=== Module-wise Design
+== Limitations
 
-==== Frontend (Studio)
-The map is full-screen with OSM base tiles. The left panel toggles vector layers served by Martin, each with an opacity slider: administrative boundaries, road network, transit stops, businesses and POIs, real-estate listings, and a crime and safety score. Users can click any feature to inspect it, type a question into the query bar, or click a point to open the evaluation panel with its Competition and Cost-to-open tabs.
-
-==== Backend API
-FastAPI exposes `/nlquery` for natural-language queries, `/site-eval`, `/competitor-analysis` and `/business-estimate` for the decision tools, and `/health`. The original dashboard additionally uses `/analyze`, `/generate`, `/explain`, `/query`, `/location-insight`, `/properties` and `/locations`.
-
-==== Spatial Database
-The database holds all layers in EPSG:4326 with GiST indexes, and every row is tagged with a `city_id` so several cities can coexist. The schema catalog documents the tables, and the same description is embedded in the model prompt.
-
-==== ETL
-The ETL pipeline (`etl/`) ingests roads, transit, POIs and boundaries from OSM with polygon-based extraction, geocodes real-estate localities with Nominatim, and loads crime data. Because extraction is driven by a city polygon, the same pipeline can load other cities. The deployed instance is pre-loaded for Mumbai.
-
-==== Legacy Dashboard
-The `/dashboard` page is the original assistant view: a chat assistant that asks clarifying questions and ranks areas, a Leaflet map with a heatmap by factor, a Top Locations panel with explanations, and a location detail view. Where an area has no scored metrics, the detail view borrows them from the nearest scored area. We keep it as the baseline against which the GeoQuery workspace is compared.
-
-=== Design Considerations
-- Verifiability: the SQL is always shown, and answers come from executed queries.
-- Performance: vector tiles and spatial indexes keep map interaction fast.
-- Generality: the `city_id` tag and polygon-based ETL support other cities.
-- Cost efficiency: the stack uses open-source tools and open data.
-
-== Advantages And Limitation
-
-=== Advantages
-+ *Verifiable answers.* Results come from executed queries on real data, and the SQL is shown, which addresses the hallucination problem of direct LLM answers.
-+ *Natural-language interface.* Users need no SQL or GIS knowledge.
-+ *Decision support.* Site evaluation, competition analysis, cost-to-open and comparison turn a map into a practical planning tool.
-+ *Open and low cost.* The stack uses open-source software and open data.
-+ *Generalisable.* Polygon-based ETL and `city_id` tagging allow other cities to be added.
-
-=== Limitations
 + *Small benchmark.* The NL to SQL benchmark has 39 questions and was run once, so its accuracy figures carry substantial uncertainty, and it covers only filter, proximity, area, ranking, listing and compositional questions.
 + *Repair stage not exercised.* The engine retries after a database error or an empty result, but no query on the benchmark needed a retry, so the benefit of repair is unmeasured.
 + *Basic SQL safeguards.* Generated SQL runs under a read-only role with a statement timeout and a row cap, and is checked to be a single `SELECT`. The check is keyword-based and not a full SQL parser, and there is no table allow-list beyond the role's grants.
@@ -402,7 +263,7 @@ The full engine returns exactly the gold layer for 29 of the 39 questions (74.4%
   caption: [Exact-match accuracy by question category. The first-attempt-only configuration is identical to the full engine because no repair was needed.],
 ) <fig-bench-category>
 
-The direct-LLM baseline gives a very different picture (@fig-bench-baseline). Only 19.5% of the place names it returned exist in the database, 57.0% of its coordinates lie within 150 m of some real feature, and only 10.6% lie within 200 m of a feature in the gold answer. The coordinate figure is generous, because Mumbai is dense and a random point is often near some point of interest, so the other two figures are more informative. The baseline also returns no SQL, so none of its answers can be checked. The median latency of the engine was 4.5 s (one LLM call plus the database, without the intent-check and explanation stages that the shipped engine adds) and that of the baseline 13.2 s. With 39 questions and one run, differences of a few questions should not be over-interpreted. A further ablation, in which the schema description lists only table names, is implemented in the benchmark code but was not run.
+The direct-LLM baseline gives a very different picture (@fig-bench-baseline). Only 19.5% of the place names it returned exist in the database, 57.0% of its coordinates lie within 150 m of some real feature, and only 10.6% lie within 200 m of a feature in the gold answer. The coordinate figure is generous, because Mumbai is dense and a random point is often near some point of interest, so the other two figures are more informative. The baseline also returns no SQL, so none of its answers can be checked. The median latency of the engine was 4.5 s, with a 95th percentile of 13.8 s (one LLM call plus the database, without the intent-check and explanation stages that the shipped engine adds) and that of the baseline 13.2 s. With 39 questions and one run, differences of a few questions should not be over-interpreted. A further ablation, in which the schema description lists only table names, is implemented in the benchmark code but was not run.
 
 #figure(
   fig-baseline(),
@@ -422,23 +283,6 @@ The comparison of weighting schemes is described with the decision support model
   fig-oat(),
   caption: [One-at-a-time sensitivity: Kendall's $tau$ against the hand-picked ranking when one criterion's weight is changed by up to 30%, the others being renormalised.],
 ) <fig-weight-oat>
-
-== Evaluation Status
-
-The table summarises what has and has not been measured.
-
-#table(
-  columns: (1fr, 1fr),
-  inset: 3pt,
-  stroke: 0.5pt + gray,
-  fill: (x, y) => if y == 0 { silver } else { none },
-  [*Measurement*], [*Status*],
-  [NL to SQL execution accuracy on a labelled benchmark of spatial questions], [39 questions, single run: 74.4% exact match, 88.4% geometry F1],
-  [Effect of the execution-based repair stage], [Repair never triggered on the benchmark (0 of 39 questions), so no measurable effect],
-  [Latency of `/nlquery` and the decision endpoints], [`/nlquery` generation step: median 4.5 s, 95th percentile 13.8 s; decision endpoints not measured],
-  [Weight sensitivity of area ranking], [Done on the 40-area dataset, see the decision support section],
-  [Accuracy of rent estimate against real rents], [No rental data yet],
-)
 
 == Discussion
 
@@ -480,7 +324,5 @@ GeoQuery shows that a natural-language interface to geospatial data can be built
   caption: [Cost-to-open and break-even report for a cafe at Vikhroli. Left: one-time and monthly costs. Right: capital needed to start, modelled revenue scenarios and the assumptions used.],
 ) <fig-plan>
 */
-
-#colbreak()
 
 #bibliography("refs.bib", full: false)
