@@ -137,6 +137,8 @@ GRANT SELECT ON ALL TABLES IN SCHEMA
 The 39 questions of the benchmark in Chapter 5, with the outcome of the full engine in the single run: 29 of 39 returned exactly the gold layer. Every question has a hand-written gold SQL query; the expected answer is the executed result of that query.
 
 #figure(
+  {
+  set par(justify: false)
   table(
     columns: (1.3cm, 3.2cm, 2cm, 1fr, 1.9cm),
     inset: 4pt,
@@ -182,6 +184,7 @@ The 39 questions of the benchmark in Chapter 5, with the outcome of the full eng
     [C04], [Compositional], [Hard], [Schools in Bandra that are within 500 m of a bus stop.], [No],
     [C05], [Compositional], [Hard], [Hospitals within 1 km of both a metro station and a railway station.], [No],
     [C06], [Compositional], [Hard], [The 3 safest areas that have a metro stop within 2 km.], [Yes],
-  ),
+  )
+  },
   caption: [Benchmark questions and the result of the full engine],
 )

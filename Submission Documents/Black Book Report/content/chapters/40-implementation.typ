@@ -16,6 +16,8 @@ The system runs on a standard personal computer or laptop.
 The stack is primarily open source (@tbl:software). The only external service is the hosted LLM.
 
 #figure(
+  {
+  set par(justify: false)
   table(
     columns: (auto, 4.2cm, 1fr),
     inset: 4pt,
@@ -35,7 +37,8 @@ The stack is primarily open source (@tbl:software). The only external service is
     [11], [Nominatim], [Geocoding of the real-estate regions],
     [12], [MongoDB], [Chat history of the legacy dashboard only],
     [13], [Docker Compose], [Runs the database and the tile server],
-  ),
+  )
+  },
   caption: [Software used in the project],
 ) <software>
 
@@ -58,8 +61,10 @@ It resolves the city polygon and then loads the administrative boundaries, ward 
 The backend is a FastAPI application. Its entry point registers one router per feature, and each router is a thin module that defines the request model and calls a service, so that the logic can be tested without the web layer. @tbl:endpoints lists the current endpoints.
 
 #figure(
+  {
+  set par(justify: false)
   table(
-    columns: (3.4cm, 1fr, 3.6cm),
+    columns: (4.2cm, 1fr, 4.5cm),
     inset: 4pt,
     align: (left + horizon, left + horizon, left + horizon),
     stroke: 0.5pt,
@@ -69,7 +74,8 @@ The backend is a FastAPI application. Its entry point registers one router per f
     [`POST /competitor-analysis`], [Point, business type and radius; returns competitors, saturation, demand index and suggested spots], [`competitor_analysis`],
     [`POST /business-estimate`], [Business type, point, area and tier; returns the cost and break-even estimate], [`business_estimator`],
     [`GET /health`], [Reports whether the application can reach the database], [],
-  ),
+  )
+  },
   caption: [Endpoints of the backend],
 ) <endpoints>
 
