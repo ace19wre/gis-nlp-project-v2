@@ -32,7 +32,7 @@
 #let swatch(col) = box(width: 7pt, height: 7pt, fill: col, baseline: 1pt)
 
 // Exact-match accuracy per question category, full engine vs first attempt only.
-#let fig-category(w: 6.9cm, h: 4.1cm) = _look({
+#let fig-category(w: 6.9cm, h: 3.6cm) = _look({
   let d = csv("data/bench_by_category.csv").slice(1)
   let cats = d.map(r => upper(r.at(0).at(0)) + r.at(0).slice(1))
   let full = d.map(r => float(r.at(2)))
@@ -53,7 +53,7 @@
 })
 
 // Grounding of the direct-LLM baseline next to the engine's geometry F1.
-#let fig-baseline(w: 7.15cm, h: 4.1cm) = _look({
+#let fig-baseline(w: 7.15cm, h: 3.6cm) = _look({
   let rows = csv("data/bench_summary.csv")
   let col(name) = rows.first().position(c => c == name)
   let get(cfg, name) = float(rows.slice(1).find(r => r.at(0) == cfg).at(col(name)))
@@ -77,7 +77,7 @@
 })
 
 // Rank agreement (Kendall tau) of each weighting scheme with the hand-picked weights.
-#let fig-tau(w: 6.45cm, h: 4.8cm) = _look(grid-x: true, {
+#let fig-tau(w: 6.45cm, h: 4.3cm) = _look(grid-x: true, {
   let d = csv("data/weight_rank_agreement.csv").slice(1).filter(r => r.at(0) != "Baseline (hand-picked)")
   let rename = (
     "Scenario: Student": "Scenario Student",
@@ -120,7 +120,7 @@
 })
 
 // One-at-a-time sensitivity of the ranking to each criterion's weight.
-#let fig-oat(w: 7.35cm, h: 4.3cm) = _look(grid-x: true, {
+#let fig-oat(w: 7.35cm, h: 3.8cm) = _look(grid-x: true, {
   let d = csv("data/weight_oat_sensitivity.csv").slice(1)
   let crits = (
     ("footfall", c-blue), ("youth", c-orange), ("access", c-green),

@@ -144,7 +144,7 @@ The decision tools reuse the same database through separate endpoints.
 To test how much the ranking depends on these weights we ran a sensitivity study on the 40 scored areas (script in the `eval/` folder). We compared the hand-picked weights with equal, rank-order centroid (ROC), AHP (consistency ratio 0.011), entropy and CRITIC weights, three scenario weight sets (budget, student and premium) and TOPSIS, measured agreement by Kendall's $tau$ and by the overlap of the top five areas, perturbed each weight by up to 30% one at a time, and drew 1,000 random weight vectors (seed 42). The ranking is stable under small changes to a single weight (worst-case $tau$ of 0.90 or higher for a 30% change) but not under a change of scheme: AHP, ROC and the premium scenario keep the baseline's top five ($tau$ of 0.92, 0.81 and 0.83), while the other schemes share only 0 to 2 of its top five areas ($tau$ from -0.11 to 0.87). Across random weight vectors the median $tau$ is 0.33 (5th to 95th percentile -0.49 to 0.84), and no area stays in the top five in more than 45% of draws. The weights therefore encode a preference, not a neutral measurement, which is one reason the GeoQuery workspace uses measured spatial queries in place of this fixed ranking. These results describe the 40-area scored dataset, not real-world site quality.
 
 == Implementation
-GeoQuery has three layers: a presentation layer (React 19, Zustand and MapLibre GL), an application layer (FastAPI with the LLM client, and MongoDB for chat history only) and a data layer (PostgreSQL 16 with PostGIS 3.4, and Martin for vector tiles); @fig-stack lists the components. This separation keeps the model, the query execution and the rendering independently replaceable. The database holds all layers in EPSG:4326 with GiST indexes and a `city_id` on every row, so several cities can coexist. The ETL (`etl/`) ingests roads, transit, POIs and boundaries from OpenStreetMap by city polygon (OSMnx), geocodes 228 real-estate localities with Nominatim and loads the crime data, so the same pipeline can load other cities; the deployed instance is pre-loaded for Mumbai. In the workspace the left panel toggles vector layers (administrative boundaries, roads, transit stops, businesses and POIs, real-estate listings, and a crime and safety score), each with an opacity slider. Users can click a feature to inspect it, type a question into the query bar, or click a point to open the evaluation panel with its Competition and Cost-to-open tabs. The backend exposes `/nlquery`, `/site-eval`, `/competitor-analysis`, `/business-estimate` and `/health`. The original assistant dashboard (`/dashboard`, a chat assistant with a Leaflet heatmap that ranks areas) is kept as the baseline. The system runs on a standard laptop (Intel i5, 8 GB RAM, 20 to 50 GB of storage) using open-source software and open data throughout.
+GeoQuery has three layers: a presentation layer (React 19, Zustand and MapLibre GL), an application layer (FastAPI with the LLM client, and MongoDB for chat history only) and a data layer (PostgreSQL 16 with PostGIS 3.4, and Martin for vector tiles); @fig-stack lists the components. This separation keeps the model, the query execution and the rendering independently replaceable. The database holds all layers in EPSG:4326 with GiST indexes and a `city_id` on every row, so several cities can coexist. The ETL (`etl/`) ingests roads, transit, POIs and boundaries from OpenStreetMap by city polygon (OSMnx), geocodes 228 real-estate localities with Nominatim and loads the crime data, so the same pipeline can load other cities; the deployed instance is pre-loaded for Mumbai. The workspace has a layer panel with opacity sliders, click-to-inspect, a query bar, and an evaluation panel with Competition and Cost-to-open tabs. The original assistant dashboard (a chat assistant with a Leaflet heatmap that ranks areas) is kept as the baseline. The system uses open-source software and open data throughout.
 
 #figure(
   table(
@@ -174,25 +174,7 @@ GeoQuery has three layers: a presentation layer (React 19, Zustand and MapLibre 
 
 == Implemented System
 
-The system is implemented end to end. @tab-data lists the Mumbai data currently loaded.
-
-#figure(
-  table(
-    columns: (1fr, auto),
-    inset: 3pt,
-    stroke: 0.5pt + gray,
-    fill: (x, y) => if y == 0 { silver } else { none },
-    [*Dataset*], [*Size*],
-    [Administrative boundaries], [48],
-    [Road segments], [16.8k],
-    [Transit stops], [2.2k],
-    [Businesses and POIs], [10.8k],
-    [Real-estate listings (CSV)], [76,000 rows],
-    [Geocoded real-estate localities], [228],
-    [Schema catalog entries], [34],
-  ),
-  caption: [Mumbai data loaded in the current instance.],
-) <tab-data>
+The system is implemented end to end. The Mumbai instance currently holds 48 administrative boundaries, 16.8k road segments, 2.2k transit stops, 10.8k businesses and POIs, 76,000 real-estate listings (CSV) geocoded to 228 localities, and 34 schema catalog entries.
 
 Compared with the POC, the GeoQuery workspace replaces invented coordinates with coordinates from the database, replaces random marker jitter with real geometries, replaces raster Leaflet maps with vector tiles, and replaces fixed synthetic metrics with metrics computed from nearby listings, transit and amenities.
 
@@ -240,15 +222,17 @@ The benchmark in `eval/nl2sql/` has 39 spatial questions in six categories (filt
 The full engine returns exactly the gold layer for 29 of the 39 questions (74.4%, geometry F1 88.4%), and every generated query executed and returned rows (@tab-bench, @fig-bench-category). The repair stage was never triggered, so the first-attempt-only configuration scores identically and this benchmark shows no benefit from repair. Accuracy is highest for named-area and ranking questions (both 100%) and lowest for listings (25%). Eight of the ten failures come from a row cap and not from a wrong query: the schema notes tell the model to use `LIMIT 500`, so questions whose gold answer is larger than 500 rows are truncated, and joined queries without `DISTINCT` let duplicate rows use up the limit. The other two are over-inclusive category choices (universities matched together with colleges, and motorways with a pattern broader than the gold road class). We count all ten as failures, but they point to the prompt rules and to the exact-match scoring more than to a lack of spatial reasoning.
 
 #figure(
+  placement: auto,
   fig-category(),
-  caption: [Exact-match accuracy by question category. The first-attempt-only configuration is identical to the full engine because no repair was needed.],
+  caption: [Exact-match accuracy by question category. The first-attempt-only configuration equals the full engine (no repair was needed).],
 ) <fig-bench-category>
 
 The direct-LLM baseline gives a very different picture (@fig-bench-baseline). Only 19.5% of the place names it returned exist in the database, 57.0% of its coordinates lie within 150 m of some real feature, and only 10.6% lie within 200 m of a feature in the gold answer. The coordinate figure is generous, because Mumbai is dense and a random point is often near some point of interest, so the other two figures are more informative. The baseline returns no SQL, so none of its answers can be checked. The median latency of the engine was 4.5 s, with a 95th percentile of 13.8 s (one LLM call plus the database, without the intent-check and explanation stages), against 13.2 s for the baseline. With 39 questions and one run, differences of a few questions should not be over-interpreted. A further ablation, in which the schema description lists only table names, is implemented but was not run.
 
 #figure(
+  placement: auto,
   fig-baseline(),
-  caption: [Grounding of the direct-LLM baseline (three left bars) next to the engine's geometry F1 against the gold answer (right bar). The metrics differ: the baseline bars show how much of its output is real, the engine bar its agreement with the gold layer.],
+  caption: [Direct-LLM baseline: share of its output that is real (left bars), next to the engine's geometry F1 against the gold layer (right bar). The metrics differ.],
 ) <fig-bench-baseline>
 
 === Weighting schemes of the legacy ranking
@@ -256,13 +240,15 @@ The direct-LLM baseline gives a very different picture (@fig-bench-baseline). On
 The comparison of weighting schemes is described with the decision support models above. @fig-weight-tau shows how far each scheme's ranking is from the hand-picked one, and @fig-weight-oat shows how little the ranking changes when a single weight is changed by up to 30%.
 
 #figure(
+  placement: auto,
   fig-tau(),
-  caption: [Rank agreement (Kendall's $tau$) of each weighting scheme with the hand-picked weights, and the overlap of the top-five areas.],
+  caption: [Rank agreement (Kendall's $tau$) of each weighting scheme with the hand-picked weights (top-five overlap in brackets).],
 ) <fig-weight-tau>
 
 #figure(
+  placement: auto,
   fig-oat(),
-  caption: [One-at-a-time sensitivity: Kendall's $tau$ against the hand-picked ranking when one criterion's weight is changed by up to 30%, the others being renormalised.],
+  caption: [One-at-a-time sensitivity: Kendall's $tau$ against the hand-picked ranking when one weight changes by up to 30% (others renormalised).],
 ) <fig-weight-oat>
 
 == Discussion
