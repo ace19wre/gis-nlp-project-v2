@@ -1,0 +1,7 @@
+category,n,full_exact_pct,no_repair_exact_pct
+filter,10,70.0,70.0
+proximity,9,77.8,77.8
+area,7,100.0,100.0
+ranking,3,100.0,100.0
+listing,4,25.0,25.0
+compositional,6,66.7,66.7
