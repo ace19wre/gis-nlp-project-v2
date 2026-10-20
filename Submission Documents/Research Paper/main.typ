@@ -1,5 +1,6 @@
 #import "@preview/charged-ieee:0.1.4": ieee
 #import "@preview/fletcher:0.5.8" as fletcher: node, edge
+#import "lilaq/figs.typ": fig-category, fig-baseline, fig-tau, fig-oat
 
 #show: ieee.with(
   title: [A Natural-Language Geospatial Query\ and Site-Evaluation System on PostGIS],
@@ -397,14 +398,14 @@ The benchmark in `eval/nl2sql/` contains 39 spatial questions in six categories 
 The full engine returns exactly the gold layer for 29 of the 39 questions (74.4%, geometry F1 88.4%), and every generated query executed and returned rows (@tab-bench, @fig-bench-category). The repair stage was never triggered: all 39 first attempts executed and returned rows, so the first-attempt-only configuration scores identically, and this benchmark shows no benefit from repair. Accuracy is highest for named-area and ranking questions (both 100%) and lowest for listings (25%). Eight of the ten failures come from a row cap and not from a wrong query. The engine's schema notes tell the model to use `LIMIT 500`, so questions whose gold answer is larger than 500 rows (hospitals, listings, hospitals near two kinds of station) are truncated, and joined queries without `DISTINCT` let duplicate rows use up the limit (for example the banks near bus stops and the schools in Bandra near bus stops). The other two failures are over-inclusive category choices: universities were matched together with colleges, and motorways with a pattern broader than the gold road class. We count all ten as failures, but they point to the prompt rules and to the exact-match scoring more than to a lack of spatial reasoning.
 
 #figure(
-  image("bench_by_category.png", width: 100%),
+  fig-category(),
   caption: [Exact-match accuracy by question category. The first-attempt-only configuration is identical to the full engine because no repair was needed.],
 ) <fig-bench-category>
 
 The direct-LLM baseline gives a very different picture (@fig-bench-baseline). Only 19.5% of the place names it returned exist in the database, 57.0% of its coordinates lie within 150 m of some real feature, and only 10.6% lie within 200 m of a feature in the gold answer. The coordinate figure is generous, because Mumbai is dense and a random point is often near some point of interest, so the other two figures are more informative. The baseline also returns no SQL, so none of its answers can be checked. The median latency of the engine was 4.5 s (one LLM call plus the database, without the intent-check and explanation stages that the shipped engine adds) and that of the baseline 13.2 s. With 39 questions and one run, differences of a few questions should not be over-interpreted. A further ablation, in which the schema description lists only table names, is implemented in the benchmark code but was not run.
 
 #figure(
-  image("bench_baseline.png", width: 100%),
+  fig-baseline(),
   caption: [Grounding of the direct-LLM baseline (three left bars) next to the engine's geometry F1 against the gold answer (right bar). The metrics differ: the baseline bars show how much of its output is real, the engine bar its agreement with the gold layer.],
 ) <fig-bench-baseline>
 
@@ -413,12 +414,12 @@ The direct-LLM baseline gives a very different picture (@fig-bench-baseline). On
 The comparison of weighting schemes is described with the decision support models above. @fig-weight-tau shows how far each scheme's ranking is from the hand-picked one, and @fig-weight-oat shows how little the ranking changes when a single weight is changed by up to 30%.
 
 #figure(
-  image("weight_tau_bar.png", width: 100%),
+  fig-tau(),
   caption: [Rank agreement (Kendall's $tau$) of each weighting scheme with the hand-picked weights, and the overlap of the top-five areas.],
 ) <fig-weight-tau>
 
 #figure(
-  image("weight_oat_sensitivity.png", width: 100%),
+  fig-oat(),
   caption: [One-at-a-time sensitivity: Kendall's $tau$ against the hand-picked ranking when one criterion's weight is changed by up to 30%, the others being renormalised.],
 ) <fig-weight-oat>
 
