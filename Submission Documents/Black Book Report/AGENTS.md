@@ -66,7 +66,7 @@ template/            🔒 formatting rules
   utils.typ               gold gradient, academic-year(), student-name formatting, blank page
   ieee.csl                IEEE citation style ("et al." after the first author when 3+ authors)
   tutorial.typ            "YOU TYPE / YOU GET" boxes used only by the sample chapters
-  fonts/                  Times New Roman: NOT in Git (licence); pass with --font-path when present
+  fonts/                  Times New Roman (must be passed with --font-path)
   logos/                  university and college logos (normal and gold)
 ```
 
@@ -99,12 +99,6 @@ typst watch   --font-path template/fonts PRINT.typ        # recompile on every s
 
 Always pass `--font-path template/fonts`: without it, machines without Times New Roman fall back to
 another font and the layout changes.
-
-The Times New Roman `.ttf` files are **not in the Git repository** (Microsoft/Monotype licence) and are
-ignored in `.gitignore`. Never commit or download font files. Windows and macOS have the font
-installed; elsewhere the user copies their own files into `template/fonts/` (see "Fonts" in
-README.md). If the font is missing, Typst warns `unknown font family: times new roman`: tell the
-user rather than switching fonts.
 
 **A change is done when** all four commands above finish with no errors and no warnings.
 
@@ -139,7 +133,7 @@ Delete `../bb-check` when you are done.
 | Margins (print)                              | left 35 mm, right 25 mm, top 30 mm, bottom 25 mm                                                                                                                                   | `PRINT.typ`                                                                       |
 | Top margin on a chapter's first page (print) | 50 mm (30 mm + 20 mm `chapter-top-space`)                                                                                                                                          | `PRINT.typ` sets it; `body.typ` applies it to chapters only, not appendices       |
 | Margins (digital)                            | 25 mm all round, no extra chapter space                                                                                                                                            | `DIGITAL.typ`                                                                     |
-| Font                                         | Times New Roman everywhere                                                                                                                                                         | every file sets it; `.ttf` files in `template/fonts/` (not in Git)                |
+| Font                                         | Times New Roman everywhere                                                                                                                                                         | every file sets it; files in `template/fonts/`                                  |
 | Body text                                    | 12 pt, justified, first-line indent 1 em in chapters                                                                                                                               | `body.typ`                                                                        |
 | Line spacing                                 | Word "1.5 lines" → `leading: 1.063em`; paragraphs `spacing: 1.563em` (+6 pt)                                                                                                       | `body.typ`                                                                        |
 | Display equations                            | Word "double" spacing around them → block `above`/`below: 1.638em`                                                                                                                 | `body.typ`                                                                        |

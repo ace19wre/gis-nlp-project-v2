@@ -59,7 +59,7 @@ BLACK BOOK/
     ├── ieee.csl               IEEE reference style ("et al." after the first author when 3+ authors)
     ├── tutorial.typ           "YOU TYPE / YOU GET" boxes used by the sample chapters
     ├── logos/
-    └── fonts/                 Times New Roman (not in the Git repo, see Fonts below)
+    └── fonts/                 Times New Roman
 ```
 
 ## Quick start
@@ -92,20 +92,11 @@ typst compile --font-path template/fonts PRINT-SPINE.typ
 
 The packages (`i-figured`, `alexandria`, and `fletcher` for the sample diagram) are downloaded automatically the first time you compile.
 
-### Fonts
-
-The Times New Roman font files are **not included in the Git repository**: their licence doesn't allow redistributing them. The template still works:
-
-- **Windows and macOS:** Times New Roman is already installed, so there is nothing to do.
-- **Linux, typst.app, or anywhere else without it:** copy `times.ttf`, `timesbd.ttf`, `timesi.ttf` and `timesbi.ttf` from a Windows PC (`C:\Windows\Fonts`) into `template/fonts/` (on typst.app, upload them into the project). On Ubuntu/Debian, `sudo apt install ttf-mscorefonts-installer` also works.
-
-If Times New Roman is missing, Typst warns `unknown font family: times new roman` and the book comes out in a different font.
-
 ## Editing with an AI code editor
 
 You can let an AI coding assistant do the typing. Cursor, Windsurf, VS Code with GitHub Copilot, Claude Code, OpenAI Codex, Gemini CLI and similar tools can all edit and compile this project.
 
-1. Get the project folder onto your computer (clone the Git repo, download it from typst.app, or copy the folder you were given). A Git clone has no font files; see [Fonts](#fonts).
+1. Get the project folder onto your computer (download it from typst.app, or copy the folder you were given).
 2. Open the folder in your editor.
 3. So the assistant can compile and check its work, install the Typst command-line tool: `winget install --id Typst.Typst` on Windows, `brew install typst` on macOS. In VS Code-based editors, the *Tinymist Typst* extension adds a live preview.
 4. Ask for what you want in plain English.
