@@ -6,7 +6,7 @@
 // title from config.typ, author = first student in the dataset list, date = when the PDF is compiled.
 #set document(
   title: Title,
-  author: dataset.first().first(),
+  author: dataset.map(student => student.first()),
   date: auto,
 )
 

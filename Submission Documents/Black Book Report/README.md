@@ -59,7 +59,7 @@ BLACK BOOK/
     ├── ieee.csl               IEEE reference style ("et al." after the first author when 3+ authors)
     ├── tutorial.typ           "YOU TYPE / YOU GET" boxes used by the sample chapters
     ├── logos/
-    └── fonts/                 Times New Roman
+    └── fonts/                 Times New Roman (not in the Git repo, see Fonts below)
 ```
 
 ## Quick start
@@ -92,11 +92,20 @@ typst compile --font-path template/fonts PRINT-SPINE.typ
 
 The packages (`i-figured`, `alexandria`, and `fletcher` for the sample diagram) are downloaded automatically the first time you compile.
 
+### Fonts
+
+The Times New Roman font files are **not included in the Git repository**: their licence doesn't allow redistributing them. The template still works:
+
+- **Windows and macOS:** Times New Roman is already installed, so there is nothing to do.
+- **Linux, typst.app, or anywhere else without it:** copy `times.ttf`, `timesbd.ttf`, `timesi.ttf` and `timesbi.ttf` from a Windows PC (`C:\Windows\Fonts`) into `template/fonts/` (on typst.app, upload them into the project). On Ubuntu/Debian, `sudo apt install ttf-mscorefonts-installer` also works.
+
+If Times New Roman is missing, Typst warns `unknown font family: times new roman` and the book comes out in a different font.
+
 ## Editing with an AI code editor
 
 You can let an AI coding assistant do the typing. Cursor, Windsurf, VS Code with GitHub Copilot, Claude Code, OpenAI Codex, Gemini CLI and similar tools can all edit and compile this project.
 
-1. Get the project folder onto your computer (download it from typst.app, or copy the folder you were given).
+1. Get the project folder onto your computer (clone the Git repo, download it from typst.app, or copy the folder you were given). A Git clone has no font files; see [Fonts](#fonts).
 2. Open the folder in your editor.
 3. So the assistant can compile and check its work, install the Typst command-line tool: `winget install --id Typst.Typst` on Windows, `brew install typst` on macOS. In VS Code-based editors, the *Tinymist Typst* extension adds a live preview.
 4. Ask for what you want in plain English.
@@ -202,11 +211,11 @@ A few department-specific things are worth checking:
 
 College rule: with more than 2 authors, list the first author followed by "et al."
 
-| Authors | Typst's built-in IEEE style | This template |
-|---|---|---|
-| 4 | T. H. Cormen, C. E. Leiserson, R. L. Rivest, and C. Stein | T. H. Cormen *et al.* |
-| 3 | Y. LeCun, Y. Bengio, and G. Hinton | Y. LeCun *et al.* |
-| 2 | S. Russell and P. Norvig | S. Russell and P. Norvig |
+| Authors | Typst's built-in IEEE style                               | This template            |
+|---------|-----------------------------------------------------------|--------------------------|
+| 4       | T. H. Cormen, C. E. Leiserson, R. L. Rivest, and C. Stein | T. H. Cormen *et al.*    |
+| 3       | Y. LeCun, Y. Bengio, and G. Hinton                        | Y. LeCun *et al.*        |
+| 2       | S. Russell and P. Norvig                                  | S. Russell and P. Norvig |
 
 - **Why a separate style file:** Typst's built-in `ieee` style lists up to 6 authors and only switches to "et al." at 7. It is stored inside the Typst program and can't be edited, so the template ships its own copy, `template/ieee.csl`.
 - **Where it came from:** the official `ieee.csl` from the Citation Style Language project (https://github.com/citation-style-language/styles), the same style collection Zotero and Mendeley use. Before editing, it was checked against Typst's built-in `ieee` style: both rendered the Bibliography **pixel-identical**.

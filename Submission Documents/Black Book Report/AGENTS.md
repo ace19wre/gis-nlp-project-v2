@@ -66,7 +66,7 @@ template/            🔒 formatting rules
   utils.typ               gold gradient, academic-year(), student-name formatting, blank page
   ieee.csl                IEEE citation style ("et al." after the first author when 3+ authors)
   tutorial.typ            "YOU TYPE / YOU GET" boxes used only by the sample chapters
-  fonts/                  Times New Roman (must be passed with --font-path)
+  fonts/                  Times New Roman: NOT in Git (licence); pass with --font-path when present
   logos/                  university and college logos (normal and gold)
 ```
 
@@ -100,6 +100,12 @@ typst watch   --font-path template/fonts PRINT.typ        # recompile on every s
 Always pass `--font-path template/fonts`: without it, machines without Times New Roman fall back to
 another font and the layout changes.
 
+The Times New Roman `.ttf` files are **not in the Git repository** (Microsoft/Monotype licence) and are
+ignored in `.gitignore`. Never commit or download font files. Windows and macOS have the font
+installed; elsewhere the user copies their own files into `template/fonts/` (see "Fonts" in
+README.md). If the font is missing, Typst warns `unknown font family: times new roman`: tell the
+user rather than switching fonts.
+
 **A change is done when** all four commands above finish with no errors and no warnings.
 
 Useful checks:
@@ -127,37 +133,37 @@ Delete `../bb-check` when you are done.
 
 ## College formatting rules and where they live
 
-| Rule | Value | Where |
-|---|---|---|
-| Paper | A4, single column, printed on one side | `PRINT.typ`, `DIGITAL.typ` |
-| Margins (print) | left 35 mm, right 25 mm, top 30 mm, bottom 25 mm | `PRINT.typ` |
-| Top margin on a chapter's first page (print) | 50 mm (30 mm + 20 mm `chapter-top-space`) | `PRINT.typ` sets it; `body.typ` applies it to chapters only, not appendices |
-| Margins (digital) | 25 mm all round, no extra chapter space | `DIGITAL.typ` |
-| Font | Times New Roman everywhere | every file sets it; files in `template/fonts/` |
-| Body text | 12 pt, justified, first-line indent 1 em in chapters | `body.typ` |
-| Line spacing | Word "1.5 lines" → `leading: 1.063em`; paragraphs `spacing: 1.563em` (+6 pt) | `body.typ` |
-| Display equations | Word "double" spacing around them → block `above`/`below: 1.638em` | `body.typ` |
-| Code blocks | single-spaced (`leading: 0.65em`) | `body.typ` |
-| Chapter title | new page; "CHAPTER N" above the title; 14 pt bold capitals; centred | `body.typ`, level-1 show rule |
-| Section (`==`) | 12 pt bold CAPITALS, left; 2 em space above and below | `body.typ` |
-| Subsection (`===`) | 12 pt regular, sentence case | `body.typ` |
-| Paragraph heading (`====`) | 12 pt bold, sentence case | `body.typ` |
-| Page numbers | bottom centre; roman from Contents (i); arabic from Chapter 1; Chapter 1's first page unnumbered | `body.typ` |
-| Page header | from the 2nd page of each chapter: *Chapter N \| Title*, italic 10 pt, right-aligned, thin rule; none on a chapter's first page or in the front matter | `body.typ`, main-matter `set page(header: ...)` |
-| Figures | numbered per chapter, caption below: "Figure 2.1: …" | `i-figured` in `body.typ` |
-| Tables | numbered per chapter, caption above: "Table 2.1: …" | `i-figured` in `body.typ` |
-| Equations | every display equation numbered per chapter, (3.1); references print "Eqn.(3.1)" | `body.typ` (`show math.equation`, `show ref`) |
-| Appendices | "APPENDIX A1" + title; sections A1.1; figures/tables A1.1; equations (A1.1); normal top margin | `body.typ` |
-| Contents | ruled table: Chapter No. / Title / Page No., showing the printed page numbers | `outlines.typ` |
-| List of Figures / Tables | Figure No / Title / Page No.; Table No. / Title / Page No.; only shown if there are figures/tables | `outlines.typ`, `body.typ` |
-| Abbreviations / Symbols | aligned columns: term – meaning; symbols ordered Greek, then lower case, then upper case | `aligned-terms` in `outlines.typ`; applied in `body.typ` |
-| Citations | IEEE numbers [1] in the text | `body.typ` |
-| Bibliography | headings "Books," and "Journal Papers,"; IEEE; first author + *et al.* when 3+ authors | `body.typ`, `template/ieee.csl` (`et-al-min="3"`) |
-| Blank sheets | 2 after the cover and 2 at the end | `PRINT.typ`, `DIGITAL.typ` |
-| Covers | logos; title 22 pt; students one per line in 15 pt bold; digital cover black with gold lettering | `template/covers/` (shared layout in `title-page.typ`) |
-| Certificate | students separated by commas and "and"; guides side by side; HOD and Principal signatures | `template/front-matter/certificate.typ` |
-| Spine | `Title` left-aligned (= top of the spine), auto-shrunk below 11 pt only if it wouldn't fit on one line; `Stream-Short academic-year/Group-N` right-aligned (= bottom of the spine) | `PRINT-SPINE.typ`; the year comes from the compile date (new year starts in July) |
-| PDF properties (digital copy) | title = `Title`; author = first student in `dataset`; date = when the PDF is compiled | `DIGITAL.typ`, `set document(...)` |
+| Rule                                         | Value                                                                                                                                                                              | Where                                                                             |
+|----------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
+| Paper                                        | A4, single column, printed on one side                                                                                                                                             | `PRINT.typ`, `DIGITAL.typ`                                                        |
+| Margins (print)                              | left 35 mm, right 25 mm, top 30 mm, bottom 25 mm                                                                                                                                   | `PRINT.typ`                                                                       |
+| Top margin on a chapter's first page (print) | 50 mm (30 mm + 20 mm `chapter-top-space`)                                                                                                                                          | `PRINT.typ` sets it; `body.typ` applies it to chapters only, not appendices       |
+| Margins (digital)                            | 25 mm all round, no extra chapter space                                                                                                                                            | `DIGITAL.typ`                                                                     |
+| Font                                         | Times New Roman everywhere                                                                                                                                                         | every file sets it; `.ttf` files in `template/fonts/` (not in Git)                |
+| Body text                                    | 12 pt, justified, first-line indent 1 em in chapters                                                                                                                               | `body.typ`                                                                        |
+| Line spacing                                 | Word "1.5 lines" → `leading: 1.063em`; paragraphs `spacing: 1.563em` (+6 pt)                                                                                                       | `body.typ`                                                                        |
+| Display equations                            | Word "double" spacing around them → block `above`/`below: 1.638em`                                                                                                                 | `body.typ`                                                                        |
+| Code blocks                                  | single-spaced (`leading: 0.65em`)                                                                                                                                                  | `body.typ`                                                                        |
+| Chapter title                                | new page; "CHAPTER N" above the title; 14 pt bold capitals; centred                                                                                                                | `body.typ`, level-1 show rule                                                     |
+| Section (`==`)                               | 12 pt bold CAPITALS, left; 2 em space above and below                                                                                                                              | `body.typ`                                                                        |
+| Subsection (`===`)                           | 12 pt regular, sentence case                                                                                                                                                       | `body.typ`                                                                        |
+| Paragraph heading (`====`)                   | 12 pt bold, sentence case                                                                                                                                                          | `body.typ`                                                                        |
+| Page numbers                                 | bottom centre; roman from Contents (i); arabic from Chapter 1; Chapter 1's first page unnumbered                                                                                   | `body.typ`                                                                        |
+| Page header                                  | from the 2nd page of each chapter: *Chapter N \| Title*, italic 10 pt, right-aligned, thin rule; none on a chapter's first page or in the front matter                             | `body.typ`, main-matter `set page(header: ...)`                                   |
+| Figures                                      | numbered per chapter, caption below: "Figure 2.1: …"                                                                                                                               | `i-figured` in `body.typ`                                                         |
+| Tables                                       | numbered per chapter, caption above: "Table 2.1: …"                                                                                                                                | `i-figured` in `body.typ`                                                         |
+| Equations                                    | every display equation numbered per chapter, (3.1); references print "Eqn.(3.1)"                                                                                                   | `body.typ` (`show math.equation`, `show ref`)                                     |
+| Appendices                                   | "APPENDIX A1" + title; sections A1.1; figures/tables A1.1; equations (A1.1); normal top margin                                                                                     | `body.typ`                                                                        |
+| Contents                                     | ruled table: Chapter No. / Title / Page No., showing the printed page numbers                                                                                                      | `outlines.typ`                                                                    |
+| List of Figures / Tables                     | Figure No / Title / Page No.; Table No. / Title / Page No.; only shown if there are figures/tables                                                                                 | `outlines.typ`, `body.typ`                                                        |
+| Abbreviations / Symbols                      | aligned columns: term – meaning; symbols ordered Greek, then lower case, then upper case                                                                                           | `aligned-terms` in `outlines.typ`; applied in `body.typ`                          |
+| Citations                                    | IEEE numbers [1] in the text                                                                                                                                                       | `body.typ`                                                                        |
+| Bibliography                                 | headings "Books," and "Journal Papers,"; IEEE; first author + *et al.* when 3+ authors                                                                                             | `body.typ`, `template/ieee.csl` (`et-al-min="3"`)                                 |
+| Blank sheets                                 | 2 after the cover and 2 at the end                                                                                                                                                 | `PRINT.typ`, `DIGITAL.typ`                                                        |
+| Covers                                       | logos; title 22 pt; students one per line in 15 pt bold; digital cover black with gold lettering                                                                                   | `template/covers/` (shared layout in `title-page.typ`)                            |
+| Certificate                                  | students separated by commas and "and"; guides side by side; HOD and Principal signatures                                                                                          | `template/front-matter/certificate.typ`                                           |
+| Spine                                        | `Title` left-aligned (= top of the spine), auto-shrunk below 11 pt only if it wouldn't fit on one line; `Stream-Short academic-year/Group-N` right-aligned (= bottom of the spine) | `PRINT-SPINE.typ`; the year comes from the compile date (new year starts in July) |
+| PDF properties (digital copy)                | title = `Title`; authors = all students in `dataset`, comma-separated; date = when the PDF is compiled                                                                             | `DIGITAL.typ`, `set document(...)`                                                |
 
 ### Deliberate decisions: don't change unless the user asks
 

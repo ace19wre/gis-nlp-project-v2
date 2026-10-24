@@ -18,7 +18,7 @@
 // Only the name and the exam seat number are printed in the book.
 #let dataset = (
   ("Riddhesh Chaudhary", "[roll no.]", "L.Y. - A", "[seat no.]"),
-  ("Arpit Balmiki", "[roll no.]", "L.Y. - A", "[seat no.]"),
+  ("Arpit Balmiki", "06", "L.Y. - A", "26257007"),
   ("Chirayu Vyas", "[roll no.]", "L.Y. - B", "[seat no.]"),
 )
 
