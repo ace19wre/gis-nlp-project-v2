@@ -45,11 +45,42 @@ Rebuild: `typst compile --format svg figures.typ "../fig-{0p}.svg"` (and `--form
 2. **Reference order.** The site says "list chronologically by first author name", which is ambiguous.
    References are ordered **alphabetically by the first author's surname** and numbered in that order.
    If they mean oldest first, the order is easy to change.
-3. **Track.** Track 3, *Data Science & Analytics*, lists "Geospatial Data Analysis" as a topic, which is the
-   closest fit. Track 4 (AI for Interdisciplinary Studies; includes "AI for Smart Cities") is the alternative.
+3. **Track.** Apply to **Track 3, Data Science & Analytics** (see the next section).
 4. **Contact numbers** on the title page are placeholders (`[phone number]`).
 5. **Captions and tables** are 11 pt (body is 12 pt) for readability. The guideline only states 12 pt for the
    text; change `size: PT(11)` in `build/build.js` if you want them at 12 pt.
+
+## Which track to apply to
+
+**Recommendation: Track 3, Data Science & Analytics, topic "Geospatial Data Analysis".**
+If EasyChair asks for a second topic, use "Data Visualization" or "Data Integration".
+
+The site lists four tracks (topics copied from the call for papers):
+
+| Track | Topics that touch this paper | Fit |
+|---|---|---|
+| 1. ML to Gen AI (15 topics) | Large Language Model, Generative AI, Transformers, Model Interpretability and Explainability | Fits the LLM part only |
+| 2. AI for Sustainability and Social Goods (10 topics) | AI for Social Goods, Transparency in AI Systems, Explainable AI | Weak: the paper is not about social impact |
+| **3. Data Science & Analytics (12 topics)** | **Geospatial Data Analysis**, Data Visualization, Data Engineering, Data Integration, Data Management Best Practices | **Best fit** |
+| 4. AI for Interdisciplinary Studies & Innovation (12 topics) | AI for Smart Cities, AI in Retail | Partial: only the decision tools |
+
+Why Track 3:
+
+- It is the only track with a topic that names the paper's subject (**Geospatial Data Analysis**). Most of
+  the work is a data system: a PostGIS database, an OpenStreetMap loading pipeline, vector tiles, and map
+  visualisation.
+- The paper's weakest point is its evaluation (39 questions, one run, and the repair stage never triggered).
+  In Track 1 it would be read against machine-learning papers, which are normally judged on model novelty and
+  large experiments. In Track 3 it is read as a data-engineering and analytics system, where an end-to-end
+  working system with a clear grounding result is the main contribution.
+- The LLM is a component and not the research contribution: the engine uses an existing hosted model with
+  prompting, validation and a retry loop.
+
+Choose **Track 1** instead only if you rewrite the paper to lead with the LLM method, for example
+by adding more models and a larger benchmark. Track 4 is a fallback, not a first choice.
+
+This is a judgement based on the track and topic lists on the site, since the organisers do not publish
+acceptance statistics or reviewer assignments. If you are unsure, ask them (info@icdmai.org).
 
 ## Before uploading
 
