@@ -108,7 +108,7 @@ const caption = (label, text) => new Paragraph({
   children: [new TextRun({ text: label + ' ', bold: true, size: PT(11) }), ...runs(text, { size: PT(11) })],
   alignment: AlignmentType.JUSTIFIED, spacing: { line: 240, after: 200 },
 });
-const subcap = (text) => new Paragraph({ children: runs(text, { size: PT(11), italics: true }), alignment: AlignmentType.CENTER, keepNext: true, spacing: { line: 240, after: 80 } });
+const subcap = (text, keep = true) => new Paragraph({ children: runs(text, { size: PT(11), italics: true }), alignment: AlignmentType.CENTER, keepNext: keep, spacing: { line: 240, after: 80 } });
 
 // ---------------------------------------------------------------- tables
 const border = { style: BorderStyle.SINGLE, size: 4, color: '000000' };
@@ -246,7 +246,7 @@ function body() {
   c.push(P('A query such as “hospitals within 1 km of a metro station” is turned into a spatial SQL query, executed and drawn as an answer layer, with the explanation and the SQL in the panel. Clicking a location opens a site report, and the Competition and Cost-to-open tabs extend it to a business decision. Figure 3 shows this for a cafe at Vikhroli (B), compared with Kanjurmarg (A). The competition tab finds four cafes within 1.5 km, the nearest 1.3 km away, so neither site has a competitor within 1 km; the catchment demand index is 78 out of 100, and the tab suggests two lower-competition spots (green), one 1.4 km away with demand 54 and one 675 m away with demand 35, each with no competitor within 500 m.'));
   c.push(P('The comparison table puts measured site attributes next to modelled business figures. The measured rows differ in ways a decision maker can use: the nearest metro or rail stop is 719 m from B and 929 m from A, B has 172 amenities within 1.5 km against 46 for A, and A has the higher safety score (82 against 74). Both sites have about the same median price per sq ft (about 19,000 rupees) and neither has a competitor within 1 km. The modelled rows (rent, start-up cost, revenue, profit and payback) favour B in this run.'));
   c.push(center([jpgImage('fig_competition.jpg', 'Competition tab for a cafe at Vikhroli with competitors in red and suggested spots in green.', 470)]));
-  c.push(subcap('(a) Competition tab'));
+  c.push(subcap('(a) Competition tab', false)); // may break here, so one large block never forces a blank page
   c.push(center([jpgImage('fig_compare.jpg', 'Comparison table of Kanjurmarg and Vikhroli for a standard-tier cafe.', 310)]));
   c.push(subcap('(b) Comparison of two candidate spots'));
   c.push(caption('Figure 3.', 'Decision tools in the workspace for a cafe at Vikhroli, Mumbai. (a) Competition tab with a 1.5 km radius: competitors are red dots, suggested lower-competition spots are green markers, and the side panel shows the catchment demand index and the nearest competitors. (b) Comparison of Kanjurmarg (A) and Vikhroli (B) for a standard-tier cafe. The site rows are measured within 1.5 km; rent, start-up cost, revenue, profit and payback are modelled estimates from a single run.'));
@@ -391,7 +391,7 @@ function makeDoc(variant) {
   const outs = [['anonymous', 'ICDMAI_paper_anonymous.docx'], ['title', 'ICDMAI_paper_with_title_page.docx']];
   for (const [v, name] of outs) {
     const buf = await Packer.toBuffer(makeDoc(v));
-    fs.writeFileSync(path.join(ROOT, name), buf);
+    fs.writeFileSync(path.join(process.env.ICDMAI_OUT || ROOT, name), buf);
     console.log('wrote', name, buf.length, 'bytes');
   }
 })();
