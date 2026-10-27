@@ -143,7 +143,7 @@ Delete `../bb-check` when you are done.
 | Subsection (`===`)                           | 12 pt regular, sentence case                                                                                                                                                       | `body.typ`                                                                        |
 | Paragraph heading (`====`)                   | 12 pt bold, sentence case                                                                                                                                                          | `body.typ`                                                                        |
 | Page numbers                                 | bottom centre; roman from Contents (i); arabic from Chapter 1; Chapter 1's first page unnumbered                                                                                   | `body.typ`                                                                        |
-| Page header                                  | from the 2nd page of each chapter: *Chapter N \| Title*, italic 10 pt, right-aligned, thin rule; none on a chapter's first page or in the front matter                             | `body.typ`, main-matter `set page(header: ...)`                                   |
+| Page header                                  | from the 2nd page of each chapter: *Chapter N \| Title*, italic 10 pt, right-aligned, no rule under it; none on a chapter's first page or in the front matter                             | `body.typ`, main-matter `set page(header: ...)`                                   |
 | Figures                                      | numbered per chapter, caption below: "Figure 2.1: …"                                                                                                                               | `i-figured` in `body.typ`                                                         |
 | Tables                                       | numbered per chapter, caption above: "Table 2.1: …"                                                                                                                                | `i-figured` in `body.typ`                                                         |
 | Equations                                    | every display equation numbered per chapter, (3.1); references print "Eqn.(3.1)"                                                                                                   | `body.typ` (`show math.equation`, `show ref`)                                     |
@@ -158,6 +158,8 @@ Delete `../bb-check` when you are done.
 | Certificate                                  | students separated by commas and "and"; guides side by side; HOD and Principal signatures                                                                                          | `template/front-matter/certificate.typ`                                           |
 | Spine                                        | `Title` left-aligned (= top of the spine), auto-shrunk below 11 pt only if it wouldn't fit on one line; `Stream-Short academic-year/Group-N` right-aligned (= bottom of the spine) | `PRINT-SPINE.typ`; the year comes from the compile date (new year starts in July) |
 | PDF properties (digital copy)                | title = `Title`; authors = all students in `dataset`, comma-separated; date = when the PDF is compiled                                                                             | `DIGITAL.typ`, `set document(...)`                                                |
+| Abstract / Acknowledgement                   | 11 pt, justified; the student's text at Word "1.5 lines" (`leading: 1.063em`, `spacing: 1.563em`)                                                                                  | `front-matter/abstract.typ`, `acknowledgement.typ`                                |
+| CO-PO tables                                 | 11 pt; PO table: 1st column Word single (`leading: 0.488em`), 2nd column exactly 12.45 pt (`leading: 5.17pt`), justified; Proof-required table: 2nd column justified               | `content/co-po-mapping.typ`                                                       |
 
 ### Deliberate decisions: don't change unless the user asks
 
@@ -165,8 +167,10 @@ Delete `../bb-check` when you are done.
   "Fig. 2.1 …" and no colon; the user chose to keep the current style).
 - The Bibliography is grouped into Books and Journal Papers, numbered in that order, not in
   order of first citation.
-- The Abstract, Acknowledgement and Declaration pages keep their own style (11 pt), not the
-  chapters' 12 pt / 1.5 spacing.
+- The Abstract, Acknowledgement and Declaration pages stay 11 pt (not the chapters' 12 pt).
+  The Abstract and Acknowledgement text is justified with Word "1.5 lines" spacing; the
+  Declaration keeps its own `leading: 22.5pt`.
+- Justified text is hyphenated (Typst's default); the user chose to keep it.
 - Contents and lists keep ruled table borders.
 - The inner title page lists student names only (no roll numbers).
 

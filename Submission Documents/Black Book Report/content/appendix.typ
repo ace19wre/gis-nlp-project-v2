@@ -7,6 +7,8 @@
 
 = Schema Description Given to the SQL Agent
 
+== Schema description
+
 This is the description of the queryable schema, with its rules, that is written into the prompt of the SQL-generating call (Chapter 3). The placeholder for the city identifier is replaced by the identifier of the city that is queried.
 
 #figure(
@@ -53,6 +55,8 @@ RULES:
 )
 
 = Database Definition (Excerpt)
+
+== Excerpt of the definition
 
 An excerpt of the SQL that creates the database. It shows five of the tables of Chapter 3 and the grants of the read-only role that executes generated queries.
 
@@ -133,6 +137,8 @@ GRANT SELECT ON ALL TABLES IN SCHEMA
 )
 
 = Benchmark Questions
+
+== Questions and outcomes
 
 The 39 questions of the benchmark in Chapter 5, with the outcome of the full engine in the single run: 29 of 39 returned exactly the gold layer. Every question has a hand-written gold SQL query; the expected answer is the executed result of that query.
 

@@ -1,7 +1,5 @@
 = Literature Survey
 
-This chapter reviews the work that this project builds on. It looks at geospatial tools and web mapping, at natural-language interfaces to databases, at the recent use of LLMs for geospatial tasks, at spatial decision support, and at the open data and software that make the system possible. It ends with a summary of what each source contributes and the gap that this work addresses.
-
 == Geospatial Analysis Tools and Web Mapping
 
 Traditional GIS platforms such as ArcGIS and QGIS provide buffering, proximity analysis and spatial querying, but they assume knowledge of spatial concepts, data formats and query languages. Cloud platforms such as Felt and Mapbox improve collaboration and visualization @felt, yet users still drive them through layers, filters and map controls. Felt has also added AI features to its platform @felt. The layered, shareable web map is therefore a useful interaction model, and our workspace follows it: the user sees toggleable layers with legends on a vector-tile map.

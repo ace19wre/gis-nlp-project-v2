@@ -1,7 +1,5 @@
 = Implementation
 
-This chapter lists the hardware and software that the project uses and describes how each part of the design in Chapter 3 was implemented: the database and tile server, the backend, the data loading pipeline, the web interface, and the way the system is run and checked.
-
 == Hardware Requirements
 
 The system runs on a standard personal computer or laptop.

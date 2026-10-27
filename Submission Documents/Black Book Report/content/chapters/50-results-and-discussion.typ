@@ -2,8 +2,6 @@
 
 = Results and Discussion
 
-This chapter presents what the system does and how well it does it. It starts with the implemented system and the data it holds, shows the decision tools on a worked example, and then reports two studies: a benchmark of the query engine against hand-written gold queries, and a sensitivity study of the legacy weighted ranking. It ends with a discussion of what the results do and do not show.
-
 == Implemented System
 
 The system is implemented end to end: the database and tile server, the query engine, the decision tools and the web workspace. @tbl:data lists the Mumbai data that the current instance holds.

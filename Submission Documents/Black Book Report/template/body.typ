@@ -163,8 +163,6 @@
       } else {
         chapter.body
       })
-      v(-0.6em)
-      line(length: 100%, stroke: 0.4pt)
     }
   }, footer: context {
     let current_page = counter(page).get().first()

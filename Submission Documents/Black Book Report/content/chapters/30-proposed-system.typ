@@ -2,8 +2,6 @@
 
 = Proposed System
 
-This chapter describes the system that was built: its overall architecture, the requirements it meets, the pipeline that turns a question into a map layer, the database, the query engine and the decision models. Everything described here is implemented; Chapter 4 gives the implementation details and Chapter 5 the results.
-
 == System Overview
 
 The system has three layers (@fig:sys-overview). The *presentation layer* is a web application built with React and MapLibre GL. It shows a full-screen vector-tile map with a panel of toggleable layers, a natural-language query bar, and panels for evaluating, comparing and costing locations. The *application layer* is a FastAPI backend. It receives questions and location requests, calls the LLM through a single client module, queries the database and returns JSON and GeoJSON. The *data layer* is a PostgreSQL database with the PostGIS extension, which holds all spatial data, and the Martin tile server, which publishes the same tables as vector tiles.

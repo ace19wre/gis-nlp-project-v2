@@ -3,7 +3,7 @@
 #import "/template/utils.typ": blank-page
 
 // PDF properties (shown under File → Properties in PDF viewers and used by the digital library):
-// title from config.typ, author = first student in the dataset list, date = when the PDF is compiled.
+// title from config.typ, authors = every student in the dataset list, date = when the PDF is compiled.
 #set document(
   title: Title,
   author: dataset.map(student => student.first()),
